@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.arondor.arender</groupId>
+        <artifactId>arender-sample-connector-parent</artifactId>
+         <version>${aerow-release}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>arender-sample-connector-war</artifactId>
+
+    <packaging>war</packaging>
+    <name>ARender HMI Sample</name>
+    <description>ARender HMI Sample</description>
+
+    <properties>
+        <!--To define a custom web.xml uncomment ligne below and create the file-->
+        <!--<maven.war.webxml>src/main/webapp/WEB-INF/web.xml</maven.war.webxml>-->
+    </properties>
+
+    <dependencies>
+
+        <!-- Base depedency : HMI-->
+        <dependency>
+            <groupId>com.arondor.arender</groupId>
+            <artifactId>arondor-arender-hmi</artifactId>
+            <!--<artifactId>arondor-arender-hmi-filenet</artifactId>-->
+            <!--<artifactId>arondor-arender-hmi-alfresco</artifactId>-->
+            <version>${arender.version}</version>
+            <type>war</type>
+        </dependency>
+
+        <!-- ARender Sample Connector -->
+        <dependency>
+            <groupId>com.arondor.arender</groupId>
+            <artifactId>arender-sample-connector-jar</artifactId>
+            <version>${arender.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- Only for Tomcat deployment...-->
+<!--          <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.9.1</version>
+            <scope>compile</scope>
+        </dependency> --> 
+
+    </dependencies>
+
+    <url>http://www.arondor.com</url>
+    <organization>
+        <name>Arondor</name>
+        <url>http://www.arondor.com</url>
+    </organization>
+    <build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.2</version>
+				<configuration>
+					<overlays>
+						<overlay>
+							<groupId>com.arondor.arender</groupId>
+							<artifactId>arondor-arender-hmi</artifactId>
+							<excludes>
+								<exclude>WEB-INF/classes/arender.xml</exclude>
+								<!--  <exclude>WEB-INF/web.xml</exclude>-->
+								<exclude>WEB-INF/web-with-security.xml</exclude>
+								<exclude>WEB-INF/classes/arender.properties</exclude>
+								<exclude>WEB-INF/classes/arender-custom-integration.xml</exclude>
+								<exclude>WEB-INF/classes/arender-custom-server-integration.xml</exclude>
+								<exclude>WEB-INF/classes/arender-server-custom-vanilla.properties</exclude>
+							</excludes>
+						</overlay>
+					</overlays>
+					<warSourceExcludes>.git</warSourceExcludes>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>2.4.1</version>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>war/WEB-INF/lib</directory>
+							<includes>
+								<include>*.jar</include>
+							</includes>
+							<followSymlinks>false</followSymlinks>
+						</fileset>
+						<fileset>
+							<directory>war</directory>
+							<excludes>
+								<exclude>WEB-INF/classes/arender.xml</exclude>
+								<!-- <exclude>WEB-INF/web.xml</exclude> -->
+								<exclude>.svn</exclude>
+								<exclude>.svn/*</exclude>
+								<exclude>.svn/**</exclude>
+								<exclude>**/.svn</exclude>
+								<exclude>**/.svn/*</exclude>
+								<exclude>**/.svn/**</exclude>
+							</excludes>
+							<followSymlinks>false</followSymlinks>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+		</plugins>
+    </build>
+</project>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.arondor.arender</groupId>
+    <artifactId>arender-sample-connector-parent</artifactId>
+    <version>${aerow-release}</version>
+    <packaging>pom</packaging>
+
+  	<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<arender-api.version>4.0.0-1</arender-api.version>		
+		<arender.version>4.0.1</arender.version>
+		<arender-release.version>4.0.1</arender-release.version>
+		<aerow-release>4.0.1</aerow-release>
+		<junit.version>4.12</junit.version>
+		<juel.version>2.2.6</juel.version>
+		<joda-time.version>2.3</joda-time.version>
+	</properties>
+
+    <modules>
+        <module>arender-sample-connector-jar</module>
+        <module>arender-sample-connector-war</module>
+    </modules>
+
+</project>

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Main Configuration file for server-side ARender HMI (GUI) -->
+<!-- This includes : -->
+<!-- - Configuring the link to the Rendition Server, via the ClientDocumentService 
+	bean -->
+<!-- - Configuring standard and custom plugins to access Document repositories -->
+<beans default-lazy-init="true" default-autowire="no"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<import resource="arender-jndi-context.xml" />
+	<import resource="annotationtemplate-catalog.xml" />
+	<import resource="arender-hmi-logger-interceptor.xml" />
+	<!-- <import resource="arender-hmi-errors-interceptor.xml" /> -->
+
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="systemPropertiesModeName"
+			value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+		<property name="ignoreUnresolvablePlaceholders" value="true" />
+		<property name="searchSystemEnvironment" value="true" />
+		<property name="locations" ref="propertiesLocations" />
+	</bean>
+
+	<util:list id="propertiesLocations">
+		<value>classpath:arender-server-default.properties</value>
+		<value>classpath:arender-server.properties</value>
+		<value>classpath:arender-server-custom-vanilla.properties</value>
+		<value>file:#{propertiesFileLocation}/*-vanilla.properties</value>
+        <value>file:#{propertiesFileLocation}/*-custom-client-server.properties</value>
+	</util:list>
+
+	<!-- Connection to the Rendition Server -->
+	<bean id="delegate"
+		class="com.arondor.viewer.common.rendition.connector.ClientDocumentService">
+		<property name="remoteDocumentServiceProvider"
+			ref="remoteDocumentServiceProvider" />
+		<property name="ignoreDocumentAccessorsWithExceptions"
+			value="${arender.server.rendition.ignore.document.accessors.with.exceptions}" />
+		<property name="maxTries"
+			value="${arender.server.rendition.max.tries}" />
+		<property name="remoteTargets" ref="remoteTargetUrls" />
+		<property name="searchDocumentsInRenditionTargets"
+			value="${arender.server.rendition.search.documents}" />
+		<property name="routingTable"
+			ref="routeTableMap${arender.server.routing.table.type}" />
+	</bean>
+
+	<bean id="remoteDocumentServiceProvider"
+		class="com.arondor.viewer.common.rendition.connector.helper.SimpleRemoteDocumentServiceProvider">
+		<property name="router" ref="renditionPolling" />
+	</bean>
+
+	<bean id="renditionPolling"
+		class="com.arondor.viewer.common.rendition.connector.helper.RenditionWeatherPolling">
+		<property name="pollingInterval"
+			value="${arender.server.rendition.weather.polling.interval}" />
+	</bean>
+
+	<bean id="remoteTargetUrls"
+		class="org.springframework.util.StringUtils"
+		factory-method="commaDelimitedListToStringArray">
+		<constructor-arg
+			value="${renditionHostEnv:${arender.server.rendition.hosts}}" />
+	</bean>
+
+	<!-- Configuration of the HMI plugins -->
+	<bean id="servletDocumentService"
+		class="com.arondor.viewer.server.servlet.ServletDocumentService"
+		lazy-init="true" scope="prototype">
+		<property name="disableCheckDocumentAvailability"
+			value="${arender.server.rendition.disable.check.document.availability}" />
+
+		<!-- display name modifer for annotations authors. Put your own custom 
+			one for personnalisation of annotations authors -->
+		<property name="displayNameProvider"
+			value="${arender.server.displayName.provider}" />
+
+		<!-- Reference to the Rendition Server -->
+		<property name="delegate" ref="delegate" />
+
+		<!-- Default URL Parsers : URL document references -->
+		<property name="registeredURLParsers"
+			ref="registeredUrlParsers" />
+
+		<!-- Use this bean to manually associate an AnnotationAccessor using a 
+			well-defined bean -->
+		<property name="annotationAccessorFactory"
+			ref="annotationAccessorFactory" />
+	</bean>
+
+	<bean id="annotationAccessorFactory"
+		class="com.arondor.viewer.common.annotation.BeanAnnotationAccessorFactory">
+		<property name="beanName"
+			value="${arender.server.default.annotation.accessor}" />
+		<property name="fallBackBeanNames"
+			ref="fallBackAnnotationAccessorBeanNames" />
+	</bean>
+
+	<bean id="defaultPrefixerDisplayNameProvider"
+		class="com.arondor.viewer.common.user.DefaultPrefixerDisplayNameProvider"
+		scope="singleton" />
+
+	<bean id="fallBackAnnotationAccessorBeanNames"
+		class="org.springframework.util.StringUtils"
+		factory-method="commaDelimitedListToStringArray">
+		<constructor-arg
+			value="${arender.server.default.annotation.accessor.fallback.beanNames}" />
+	</bean>
+
+	<bean id="registeredUrlParsers"
+		class="org.springframework.util.StringUtils"
+		factory-method="commaDelimitedListToStringArray">
+		<constructor-arg
+			value="${arender.server.url.parsers.beanNames}" />
+	</bean>
+
+	<bean id="DefaultURLParser"
+		class="com.arondor.viewer.server.servlet.urlparser.DefaultURLParser">
+		<property name="useLocale" value="${default.url.parser.use.locale.for.ids}"/>
+	</bean>
+	<bean id="DocumentIdURLParser"
+		class="com.arondor.viewer.server.servlet.urlparser.DocumentIdURLParser" />
+	<bean id="FileattachmentURLParser"
+		class="com.arondor.viewer.server.servlet.urlparser.FileattachmentURLParser" />
+	<bean id="ExternalBeanURLParser"
+		class="com.arondor.viewer.server.servlet.urlparser.ExternalBeanURLParser" />
+	<bean id="AlterContentParser"
+		class="com.arondor.viewer.server.servlet.urlparser.AlterContentParser" />
+	<bean id="FallbackURLParser"
+		class="com.arondor.viewer.server.servlet.urlparser.FallbackURLParser" />	
+
+
+	<!-- Possibility to display username in perf log -->
+	<!-- <bean id="loggerInterceptor" class="com.arondor.viewer.common.logger.LoggerInterceptor"> -->
+	<!-- <property name="username" value="true" /> -->
+	<!-- </bean> -->
+
+	<bean id="xfdfAnnotationAccessor"
+		class="com.arondor.viewer.xfdf.annotation.XFDFAnnotationAccessor"
+		scope="prototype">
+		<property name="contentAccessor">
+			<bean
+				class="com.arondor.viewer.xfdf.annotation.FileSerializedContentAccessor">
+				<property name="path"
+					value="${arender.server.annotations.xfdf.localstorage.default.path}" />
+			</bean>
+		</property>
+		<!-- <property name="recoverCDATA" value="true" /> -->
+
+
+		<property name="annotationCreationPolicy">
+			<bean
+				class="com.arondor.viewer.client.api.annotation.AnnotationCreationPolicy">
+				<property name="canCreateAnnotations"
+					value="${arender.server.annotations.can.create}" />
+				<property name="textAnnotationsSupportHtml"
+					value="${arender.server.annotations.text.html.support}" />
+				<property name="textAnnotationsSupportReply"
+					value="${arender.server.annotations.text.reply.support}" />
+				<property name="textAnnotationsSupportStatus"
+					value="${arender.server.annotations.text.status.support}" />
+				<property name="textAnnotationsCommentSupportReply"
+					value="${arender.server.annotations.text.comment.reply.support}" />
+
+				<!-- For each annotation, show a list of security levels to choose from -->
+				<property name="annotationsSupportSecurity"
+					value="${arender.server.annotations.text.security.support}" />
+				<property name="availableSecurityLevels"
+					ref="availableSecurityLevels" />
+				<property name="annotationTemplateCatalog"
+					ref="annotationTemplateCatalog" />
+			</bean>
+		</property>
+
+	</bean>
+
+	<!-- List of available Security Levels for annotations. Each level as a 
+		symbolic, technical name, and a per-locale display name. Fallbacks to english 
+		if no display name is provided for a given locale -->
+	<bean id="availableSecurityLevels" class="java.util.ArrayList">
+		<constructor-arg>
+			<list>
+				<bean
+					class="com.arondor.viewer.annotation.common.SecurityLevel">
+					<property name="symbolicName" value="private" />
+					<property name="localizedDisplayNames">
+						<map>
+							<entry key="fr" value="Privé" />
+							<entry key="en" value="Private" />
+						</map>
+					</property>
+				</bean>
+				<bean
+					class="com.arondor.viewer.annotation.common.SecurityLevel">
+					<property name="symbolicName" value="public" />
+					<property name="localizedDisplayNames">
+						<map>
+							<entry key="fr" value="Public" />
+							<entry key="en" value="Public" />
+						</map>
+					</property>
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<!-- Default, in-memory only, Annotation store policy -->
+	<bean id="inMemoryAnnotations"
+		class="com.arondor.viewer.common.documentaccessor.DocumentAnnotationAccessorMemoryCache"
+		scope="prototype" />
+
+	<!-- Generic, Application-wide DocumentId generator -->
+	<bean id="documentIdFactory"
+		class="com.arondor.viewer.common.document.id.DocumentIdFactory"
+		scope="singleton">
+		<property name="documentIdGeneratorBeanName"
+			value="${arender.documentid.generator.beanName}" />
+	</bean>
+
+	<bean id="documentIdGenerator"
+		class="com.arondor.viewer.common.document.id.Base64SelfContainedDocumentIdGenerator">
+	</bean>
+
+	<bean id="encryptedDocumentIdGenerator"
+		class="com.arondor.viewer.common.document.id.EncryptedPerishableSelfContainedDocumentIdGenerator">
+		<property name="addEndOfLifeTimestamp"
+			value="${arender.documentid.encrypted.ttl.add}" />
+		<property name="timeToLiveMilliseconds"
+			value="${arender.documentid.encrypted.ttl.duration.ms}" />
+	</bean>
+
+	<bean id="restDocumentService"
+		class="com.arondor.arender.viewer.common.rest.DocumentServiceRestClient"
+		scope="prototype">
+		<property name="serializationModel">
+			<value
+				type="com.arondor.arender.viewer.common.rest.BaseRestClient.SERIALIZATION_MODEL">${arender.rest.serialization.model}</value>
+		</property>
+		<property name="base64XMLEncoding"
+			value="${arender.rest.b64.encoding}" />
+		<property name="trustManager">
+			<ref bean="${arender.rest.ssl.custom.trust.manager.beanname}" />
+		</property>
+		<property name="hostnameVerifier">
+			<ref bean="${arender.rest.ssl.custom.hostname.verifier.beanname}" />
+		</property>
+		<property name="customHttps"
+			value="${arender.rest.ssl.custom.use}" />
+		<property name="loadBalancerCookieName" value="${arender.rest.loadbalancer.cookie.name}" />
+	</bean>
+
+	<bean id="insecureHostVerifier"
+		class="com.arondor.arender.viewer.common.rest.InsecureHostnameVerifier"
+		scope="singleton" />
+	<bean id="insecureTrustManager"
+		class="com.arondor.arender.viewer.common.rest.InsecureTrustManager"
+		scope="singleton" />
+
+	<bean id="routeTableMapClassic"
+		class="com.arondor.viewer.common.rendition.connector.documents.routing.DocumentServiceRouteTableHashMap" />
+	<bean id="routeTableMapRedis"
+		class="com.arondor.viewer.common.rendition.connector.documents.routing.DocumentServiceRouteTableHashMapRedis">
+		<property name="redisUrl"
+			value="${arender.server.routing.table.redis.url}" />
+	</bean>
+
+	<bean id="documentStatisticsProvider"
+		class="com.arondor.viewer.common.document.statistics.DocumentStatisticsProvider"
+		scope="singleton">
+		<property name="requestType">
+			<value type="com.arondor.viewer.client.api.document.statistics.DocumentPerformanceStatistics$PushRequestType">${arender.server.document.statistics.pushRequestType}</value>
+		</property>
+	</bean>
+	
+	<bean id="redisCache"
+	    class="com.arondor.viewer.common.document.statistics.RedisCacheMap"
+	    scope="singleton">
+	    <property name="redisUrl" value="${arender.server.routing.table.redis.url}" />
+	</bean>
+	
+	<bean id="guavaCache"
+	    class="com.arondor.viewer.common.document.statistics.GuavaCacheMap"
+	    scope="singleton">
+	</bean>
+
+	<import resource="arender-cached-configuration.xml" />
+	<import resource="arender-editor-specific-integration.xml" />
+	<import resource="arender-custom-server-integration.xml" />
+</beans>
+

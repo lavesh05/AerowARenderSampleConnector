@@ -1,0 +1,16 @@
+.idea
+*.iml
+*.class
+target
+.settings/
+.classpath
+.project
+MANIFEST.MF
+gwt-unitCache
+generated-resources
+.metadata
+.gwt
+.pmd
+*.jar
+overlays
+*.log
